@@ -11,6 +11,12 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+declare global {
+  interface Window {
+    frameworkReady?: () => void;
+  }
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
@@ -18,6 +24,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    window.frameworkReady?.();
     if (loaded) {
       SplashScreen.hideAsync();
     }
