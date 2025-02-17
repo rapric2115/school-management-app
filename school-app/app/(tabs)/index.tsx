@@ -1,74 +1,266 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, StyleSheet, Platform, 
+  ScrollView,
+  TouchableOpacity,
 
+} from 'react-native';
+
+import { Ionicons } from '@expo/vector-icons';
+import { students } from '../data/student';
+import {
+  LineChart,
+  PieChart
+} from "react-native-chart-kit";
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 
 export default function HomeScreen() {
+  const [currentStudent, setCurrentStudent] = useState(students[1]);
+  const [showStudentPicker, setShowStudentPicker] = useState(false);
+
+  useEffect(() => {
+    loadStudent();
+  }, []);
+
+  interface Student {
+    id: number;
+    name: string;
+    avatar: string;
+    grade: string;
+    attendance: string;
+    nextPayment: string;
+    amount: string;
+    gradeData: {
+      labels: string[];
+      datasets: {
+        data: number[];
+      }[];
+    };
+  }
+
+  const loadStudent = async () => {
+    const studentId = await AsyncStorage.getItem('studentId');
+    if (studentId && students[studentId]) {
+      setCurrentStudent(students[studentId]);
+    }
+  };
+
+  const handleStudentChange = async (studentId: number) => {
+    await AsyncStorage.setItem('studentId', studentId.toString());
+    setCurrentStudent(students[studentId] as Student);
+    setShowStudentPicker(false);
+  };
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('studentId');
+    router.replace('/');
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <ScrollView style={styles.container}>
+      <ThemedView style={{ flex: 1 }}>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={24} color="#fff" />
+          <ThemedText style={{justifyContent: 'center'}}>Logout</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.header} 
+          onPress={() => setShowStudentPicker(!showStudentPicker)}
+        >
+          <Image
+            source={{ uri: currentStudent.avatar }}
+            style={styles.avatar}
+          />
+          <ThemedView style={styles.headerText} darkColor='dark'>
+            <ThemedText darkColor='dark'>{currentStudent.name}</ThemedText>
+            <ThemedText darkColor='dark'>{currentStudent.grade}</ThemedText>
+          </ThemedView>
+          <Ionicons name="chevron-down" size={24} color="#64748b" />         
+        </TouchableOpacity>
+
+        {/* <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={24} color="#64748b" />
+          <ThemedText style={{justifyContent: 'center'}}>Logout</ThemedText>
+        </TouchableOpacity> */}
+      </ThemedView>
+      {showStudentPicker && (
+        <ThemedView style={styles.studentPicker}>
+          {Object.entries(students).map(([id, student]) => (
+            <TouchableOpacity
+              key={id}
+              style={styles.studentOption}
+              onPress={() => handleStudentChange(parseInt(id))}>
+              <Image source={{ uri: student.avatar }} style={styles.smallAvatar} />
+              <ThemedText style={styles.studentOptionText}>{student.name}</ThemedText>
+            </TouchableOpacity>
+          ))}
+        </ThemedView>
+      )}
+
+      <ThemedView style={styles.card}>
+        <ThemedText style={styles.cardTitle}>Quick Stats</ThemedText>
+        <ThemedView style={styles.statsContainer} darkColor='dark'>
+          <ThemedView style={styles.stat} darkColor='dark'>
+            <ThemedText style={styles.statLabel}>Attendance</ThemedText>
+            <ThemedText style={styles.statValue}>{currentStudent.attendance}</ThemedText>
+          </ThemedView>
+          <ThemedView style={styles.stat} darkColor='dark'>
+            <ThemedText style={styles.statLabel}>Next Payment</ThemedText>
+            <ThemedText style={styles.statValue}>{currentStudent.nextPayment}</ThemedText>
+          </ThemedView>
+          <ThemedView style={styles.stat} darkColor='dark'>
+            <ThemedText style={styles.statLabel}>Amount Due</ThemedText>
+            <ThemedText style={styles.statValue}>{currentStudent.amount}</ThemedText>
+          </ThemedView>
+        </ThemedView>
+      </ThemedView>
+
+      <ThemedView style={styles.card}>
+        <ThemedText style={styles.cardTitle}>Grades</ThemedText>
+        <LineChart
+          data={currentStudent.gradeData}
+          width={Platform.OS === 'web' ? 400 : 300}
+          height={200}
+          chartConfig={{
+            backgroundGradientFrom: '#fff',
+            backgroundGradientTo: '#fff',
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+            labelColor: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+            style: {
+              borderRadius: 16,
+            },
+          }}
+          style={styles.chart}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  studentSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
+  headerText: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  grade: {
+    fontSize: 16,
+    color: '#64748b',
+  },
+  logoutButton: {
+    padding: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#40798C'
+  },
+  studentPicker: {
+    backgroundColor: '#fff',
+    margin: 10,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  studentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  smallAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 15,
+  },
+  studentOptionText: {
+    fontSize: 16,
+    color: '#1e293b',
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    margin: 10,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 15,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  stat: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 5,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2563eb',
+  },
+  statDate: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+ 
 });

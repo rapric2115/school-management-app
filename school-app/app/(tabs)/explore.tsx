@@ -1,109 +1,294 @@
-import { StyleSheet, Image, Platform } from 'react-native';
-
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { students } from '../data/student';
 
 export default function TabTwoScreen() {
+  const [currentStudent, setCurrentStudent] = useState(students[1]);
+  const [activeTab, setActiveTab] = useState('announcements');
+  
+  useEffect(() => {
+    loadStudent();
+  }, []);
+
+  const loadStudent = async () => {
+    const studentId = await AsyncStorage.getItem('studentId');
+    if (studentId && students[studentId]) {
+      setCurrentStudent(students[studentId]);
+    }
+  };
+
+  const announcements = [
+    {
+      id: 1,
+      title: 'Spring Break Schedule',
+      date: 'March 20, 2024',
+      content: 'Spring break will be from April 1-5. Classes resume on April 8.',
+      priority: 'high',
+      image: 'https://images.unsplash.com/photo-1596386461350-326ccb383e9f?w=800&q=80',
+    },
+    {
+      id: 2,
+      title: 'Parent-Teacher Conference',
+      date: 'March 18, 2024',
+      content: 'Schedule your meeting with teachers for the upcoming parent-teacher conference day.',
+      priority: 'medium',
+    },
+    {
+      id: 3,
+      title: 'Science Fair Registration',
+      date: 'March 15, 2024',
+      content: 'Registration for the annual science fair is now open. Submit your project proposals by March 25.',
+      priority: 'medium',
+      image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&q=80',
+    },
+  ];
+
+  const events = [
+    {
+      id: 1,
+      title: 'Sports Day',
+      date: 'March 30, 2024',
+      time: '9:00 AM - 4:00 PM',
+      location: 'School Sports Complex',
+      image: 'https://images.unsplash.com/photo-1576858574144-9ae1ebcf5ae5?w=800&q=80',
+    },
+    {
+      id: 2,
+      title: 'Art Exhibition',
+      date: 'April 15, 2024',
+      time: '2:00 PM - 6:00 PM',
+      location: 'School Auditorium',
+      image: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800&q=80',
+    },
+    {
+      id: 3,
+      title: 'Career Day',
+      date: 'April 20, 2024',
+      time: '10:00 AM - 3:00 PM',
+      location: 'Main Hall',
+      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
+    },
+  ];
+
+  const renderPriorityBadge = (priority) => {
+    const colors = {
+      high: { bg: '#fee2e2', text: '#dc2626' },
+      medium: { bg: '#fef9c3', text: '#ca8a04' },
+      low: { bg: '#dcfce7', text: '#16a34a' },
+    };
+
+    return (
+      <View style={[styles.priorityBadge, { backgroundColor: colors[priority].bg }]}>
+        <Text style={[styles.priorityText, { color: colors[priority].text }]}>
+          {priority.charAt(0).toUpperCase() + priority.slice(1)}
+        </Text>
+      </View>
+    );
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>School Information</Text>
+        <Text style={styles.headerSubtitle}>{currentStudent.grade}</Text>
+      </View>
+
+      <View style={styles.tabs}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'announcements' && styles.activeTab]}
+          onPress={() => setActiveTab('announcements')}>
+          <Ionicons
+            name="megaphone"
+            size={20}
+            color={activeTab === 'announcements' ? '#2563eb' : '#64748b'}
+          />
+          <Text style={[
+            styles.tabText,
+            activeTab === 'announcements' && styles.activeTabText
+          ]}>
+            Announcements
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => setActiveTab('events')}>
+          <Ionicons
+            name="calendar"
+            size={20}
+            color={activeTab === 'events' ? '#2563eb' : '#64748b'}
+          />
+          <Text style={[
+            styles.tabText,
+            activeTab === 'events' && styles.activeTabText
+          ]}>
+            Events
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content}>
+        {activeTab === 'announcements' ? (
+          <>
+            {announcements.map((announcement) => (
+              <View key={announcement.id} style={styles.card}>
+                {announcement.image && (
+                  <Image
+                    source={{ uri: announcement.image }}
+                    style={styles.cardImage}
+                  />
+                )}
+                <View style={styles.cardContent}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>{announcement.title}</Text>
+                    {announcement.priority && renderPriorityBadge(announcement.priority)}
+                  </View>
+                  <Text style={styles.cardDate}>{announcement.date}</Text>
+                  <Text style={styles.cardText}>{announcement.content}</Text>
+                </View>
+              </View>
+            ))}
+          </>
+        ) : (
+          <>
+            {events.map((event) => (
+              <View key={event.id} style={styles.card}>
+                <Image
+                  source={{ uri: event.image }}
+                  style={styles.cardImage}
+                />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>{event.title}</Text>
+                  <Text style={styles.cardDate}>{event.date}</Text>
+                  <Text style={styles.cardTime}>
+                    <Ionicons name="time-outline" size={16} color="#64748b" /> {event.time}
+                  </Text>
+                  <Text style={styles.cardLocation}>
+                    <Ionicons name="location-outline" size={16} color="#64748b" /> {event.location}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
   },
-  titleContainer: {
+  header: {
+    backgroundColor: '#40798C',
+    padding: 20,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#e2e8f0',
+  },
+  tabs: {
     flexDirection: 'row',
-    gap: 8,
+    backgroundColor: '#fff',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginHorizontal: 5,
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#eff6ff',
+  },
+  tabText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#64748b',
+  },
+  activeTabText: {
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+    padding: 10,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 15,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  cardImage: {
+    width: '100%',
+    height: 200,
+  },
+  cardContent: {
+    padding: 15,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1e293b',
+    flex: 1,
+    marginRight: 10,
+  },
+  cardDate: {
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 8,
+  },
+  cardText: {
+    fontSize: 16,
+    color: '#334155',
+    lineHeight: 24,
+  },
+  cardTime: {
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 4,
+  },
+  cardLocation: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  priorityBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  priorityText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
