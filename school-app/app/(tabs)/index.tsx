@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Image, StyleSheet, Platform, 
   ScrollView,
   TouchableOpacity,
@@ -6,7 +6,6 @@ import { Image, StyleSheet, Platform,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-import { students } from '../data/student';
 import {
   LineChart,
   PieChart
@@ -17,49 +16,41 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import { useStore } from '../../context/DataContext';
 
 export default function HomeScreen() {
-  const [currentStudent, setCurrentStudent] = useState(students[1]);
+  const { currentStudent, students, user, fetchStudents, setCurrentStudent, logout, isLoading  } = useStore();
   const [showStudentPicker, setShowStudentPicker] = useState(false);
 
   useEffect(() => {
-    loadStudent();
-  }, []);
+    fetchStudents();
+    console.log('data from index', students)
+  },[students])
 
-  interface Student {
-    id: number;
-    name: string;
-    avatar: string;
-    grade: string;
-    attendance: string;
-    nextPayment: string;
-    amount: string;
-    gradeData: {
-      labels: string[];
-      datasets: {
-        data: number[];
-      }[];
-    };
-  }
-
-  const loadStudent = async () => {
-    const studentId = await AsyncStorage.getItem('studentId');
-    if (studentId && students[studentId]) {
-      setCurrentStudent(students[studentId]);
-    }
-  };
-
-  const handleStudentChange = async (studentId: number) => {
-    await AsyncStorage.setItem('studentId', studentId.toString());
-    setCurrentStudent(students[studentId] as Student);
+  const handleStudentChange = (student: any) => {
+    setCurrentStudent(student);
     setShowStudentPicker(false);
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('userToken');
-    await AsyncStorage.removeItem('studentId');
+    await logout();
     router.replace('/');
   };
+
+  const gradeData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [{data: [65, 59, 80, 81, 56, 55]}],
+}
+
+// console.log('Current student', currentStudent)
+
+if (isLoading || !currentStudent) {
+  return (
+    <ThemedView style={styles.loadingContainer}>
+      <ThemedText style={styles.loadingText}>Loading...</ThemedText>
+    </ThemedView>
+  );
+}
 
   return (
     <ScrollView style={styles.container}>
@@ -72,13 +63,15 @@ export default function HomeScreen() {
           style={styles.header} 
           onPress={() => setShowStudentPicker(!showStudentPicker)}
         >
-          <Image
-            source={{ uri: currentStudent.avatar }}
-            style={styles.avatar}
-          />
+          {currentStudent && (
+            <Image
+              source={{ uri: currentStudent.avatar }}
+              style={styles.avatar}
+            />
+          )}
           <ThemedView style={styles.headerText} darkColor='dark'>
-            <ThemedText darkColor='dark'>{currentStudent.name}</ThemedText>
-            <ThemedText darkColor='dark'>{currentStudent.grade}</ThemedText>
+            <ThemedText darkColor='dark'>{currentStudent ? currentStudent.name: 'name'}</ThemedText>
+            <ThemedText darkColor='dark'>{currentStudent ? currentStudent.grade: 'grade'}</ThemedText>
           </ThemedView>
           <Ionicons name="chevron-down" size={24} color="#64748b" />         
         </TouchableOpacity>
@@ -107,15 +100,15 @@ export default function HomeScreen() {
         <ThemedView style={styles.statsContainer} darkColor='dark'>
           <ThemedView style={styles.stat} darkColor='dark'>
             <ThemedText style={styles.statLabel}>Attendance</ThemedText>
-            <ThemedText style={styles.statValue}>{currentStudent.attendance}</ThemedText>
+            <ThemedText style={styles.statValue}>{currentStudent? currentStudent.attendance: 'no attendance'}</ThemedText>
           </ThemedView>
           <ThemedView style={styles.stat} darkColor='dark'>
             <ThemedText style={styles.statLabel}>Next Payment</ThemedText>
-            <ThemedText style={styles.statValue}>{currentStudent.nextPayment}</ThemedText>
+            <ThemedText style={styles.statValue}>{currentStudent? currentStudent.nextPayment: 'no next payment'}</ThemedText>
           </ThemedView>
           <ThemedView style={styles.stat} darkColor='dark'>
             <ThemedText style={styles.statLabel}>Amount Due</ThemedText>
-            <ThemedText style={styles.statValue}>{currentStudent.amount}</ThemedText>
+            <ThemedText style={styles.statValue}>{currentStudent? currentStudent.amount: 'no amount'}</ThemedText>
           </ThemedView>
         </ThemedView>
       </ThemedView>
@@ -123,7 +116,7 @@ export default function HomeScreen() {
       <ThemedView style={styles.card}>
         <ThemedText style={styles.cardTitle}>Grades</ThemedText>
         <LineChart
-          data={currentStudent.gradeData}
+          data={gradeData}
           width={Platform.OS === 'web' ? 400 : 300}
           height={200}
           chartConfig={{
@@ -261,6 +254,16 @@ const styles = StyleSheet.create({
   chart: {
     marginVertical: 8,
     borderRadius: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#64748b',
   },
  
 });

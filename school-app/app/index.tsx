@@ -1,25 +1,40 @@
-import { useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
-import { Link, router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
+import { useStore } from '../context/DataContext';
 
 export default function Login() {
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const { login, isLoading, error } = useStore();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [validationError, setValidationError] = useState('');
 
-  const checkAuth = async () => {
-    const token = await AsyncStorage.getItem('userToken');
-    if (token) {
-      router.replace('/(tabs)');
+  const validateForm = () => {
+    if (!email || !password) {
+      setValidationError('Please fill in all fields');
+      return false;
     }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setValidationError('Please enter a valid email address');
+      return false;
+    }
+    if (password.length < 6) {
+      setValidationError('Password must be at least 6 characters long');
+      return false;
+    }
+    setValidationError('');
+    return true;
   };
 
   const handleLogin = async () => {
-    // In a real app, validate credentials here
-    await AsyncStorage.setItem('userToken', 'dummy-token');
-    await AsyncStorage.setItem('studentId', '1'); // Default to first student
-    router.replace('/(tabs)');
+    if (!validateForm()) return;
+    
+    try {
+      await login(email, password);
+      router.replace('/(tabs)');
+    } catch (error) {
+      console.error('Login error:', error);
+    }
   };
 
   return (
@@ -34,27 +49,47 @@ export default function Login() {
       </View>
 
       <View style={styles.formContainer}>
+        {(error || validationError) && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error || validationError}</Text>
+          </View>
+        )}
+
         <TextInput
           style={styles.input}
           placeholder="Email"
           keyboardType="email-address"
           autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+          editable={!isLoading}
         />
         <TextInput
           style={styles.input}
           placeholder="Password"
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          editable={!isLoading}
         />
         
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Login</Text>
+        <TouchableOpacity 
+          style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+          onPress={handleLogin}
+          disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginButtonText}>Login</Text>
+          )}
         </TouchableOpacity>
 
-        <Link href="/register" asChild>
-          <TouchableOpacity style={styles.registerButton}>
-            <Text style={styles.registerButtonText}>Create Account</Text>
-          </TouchableOpacity>
-        </Link>
+        <TouchableOpacity 
+          style={styles.registerButton} 
+          onPress={() => router.push('/register')}
+          disabled={isLoading}>
+          <Text style={styles.registerButtonText}>Create Account</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -100,6 +135,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
+  errorContainer: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    textAlign: 'center',
+  },
   input: {
     backgroundColor: '#f8fafc',
     borderRadius: 8,
@@ -113,6 +159,9 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     marginBottom: 15,
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#93c5fd',
   },
   loginButtonText: {
     color: '#fff',

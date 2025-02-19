@@ -17,7 +17,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
-        headerShown: true,
+        headerShown: false,
         headerStyle: {
           backgroundColor: Colors[colorScheme ?? 'light'].background,
         },
@@ -40,6 +40,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          headerShown: true
         }}
       />
         <Tabs.Screen
@@ -47,6 +48,7 @@ export default function TabLayout() {
         options={{
           title: 'Grades',
           tabBarIcon: ({ color }) => <MaterialIcons size={28} name="grade" color={color} />,
+          headerShown: true
         }}
       />
        <Tabs.Screen
@@ -54,6 +56,7 @@ export default function TabLayout() {
         options={{
           title: 'Homeworks',
           tabBarIcon: ({ color }) => <MaterialIcons size={28} name="home-work" color={color} />,
+          headerShown: true
         }}
       />
       <Tabs.Screen
@@ -61,6 +64,7 @@ export default function TabLayout() {
         options={{
           title: 'Payments',
           tabBarIcon: ({ color }) => <MaterialIcons size={28} name="payment" color={color} />,
+          headerShown: true
         }}
       />
       <Tabs.Screen
@@ -68,6 +72,7 @@ export default function TabLayout() {
         options={{
           title: 'Information',
           tabBarIcon: ({ color }) => <Ionicons size={28} name="information-circle" color={color} />,
+          headerShown: true
         }}
       />
     </Tabs>
