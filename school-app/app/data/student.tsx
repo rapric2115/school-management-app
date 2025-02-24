@@ -2,7 +2,7 @@ export const students = {
     1: {
         name: 'John Doe',
         grade: '10th Grade',
-        attendance: '90%',
+        attendancePorcentage: '90%',
         nextPayment: 'March 15, 2025',
         amount: '$500',
         gpa: 3.56,

@@ -2,20 +2,28 @@ export interface Student {
     id: string;
     name: string;
     grade: string;
-    attendance: string;
+    guardian_id: string;
+    address: string;
+    attendancePorcentage: string;
+    phone: string;
     nextPayment: string;
-    amount: string;
+    tuition: string;
+    gpa: number;
+    term: string;
     avatar: string;
+    email: string;
+    grades: number;
     gradeData: {
       labels: string[];
       datasets: { data: number[] }[];
     };
-    subjects: {
+    subjectGrade: {
       name: string;
       grade: string;
       percentage: number;
     }[];
-    homework: {
+    homeworks: {
+      id: string;
       subject: string;
       title: string;
       dueDate: string;

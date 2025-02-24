@@ -25,6 +25,8 @@ interface AppState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+  subjectGrade: { [key: string]: any; id: string; }[]
+  homeworks: Student[];
   
   // Auth actions
   login: (email: string, password: string) => Promise<void>;
@@ -35,6 +37,8 @@ interface AppState {
   setCurrentStudent: (student: Student) => void;
   fetchStudents: () => Promise<void>;
   fetchStudentById: (id: string) => Promise<void>;
+  fetchSubjectGrades: (id: string) => Promise<void>;
+  fetchHomework: () => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -43,6 +47,8 @@ export const useStore = create<AppState>((set, get) => ({
   user: null,
   isLoading: false,
   error: null,
+  subjectGrade: [],
+  homeworks: [],
 
   login: async (email: string, password: string) => {
     try {
@@ -50,16 +56,27 @@ export const useStore = create<AppState>((set, get) => ({
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Get user's students from Firestore
-      const studentsRef = collection(db, 'students');
-      const q = query(studentsRef, where('guardian_id', '==', user.uid));
-      const querySnapshot = await getDocs(q);
-      
-      const students: Student[] = [];
-      querySnapshot.forEach((doc) => {
-        students.push({ id: doc.id, ...doc.data() } as Student);
-      });
+      // Get user's students from Firestore     
+      const students: Student[] = []; 
 
+      const querySnap = await getDocs(collection(db, "students"));
+      querySnap.forEach((doc) => {
+        // doc.data() is never undefined for query doc snapshots
+        const studentRef = doc.data();
+        const guardianRef = studentRef['guardian_id'];
+        if(guardianRef) {
+          if(typeof guardianRef === 'object' && guardianRef !== null) {
+            const pathSegment = guardianRef._key.path.segments[6];
+
+            if(pathSegment === user.uid) {
+              students.push({id: doc.id, ...studentRef} as Student)
+            }
+          }
+        }
+       
+      });     
+
+      
       set({ 
         user: {
           uid: user.uid,
@@ -68,8 +85,9 @@ export const useStore = create<AppState>((set, get) => ({
         },
         students,
         currentStudent: students[0] || null,
-        isLoading: false 
+        isLoading: false
       });
+
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
@@ -114,30 +132,38 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // fetchStudents function adjusted for clarity
-fetchStudents: async () => {
-  try {
-    const { user } = get();
-    if (!user) return;
+  fetchStudents: async () => {
+    try {
+      const { user } = get();
+      if (!user || !user.uid) {
+        set({ error: 'User not authenticated', isLoading: false });
+        return;
+      }
+  
 
-    set({ isLoading: true, error: null });
-    
-    const studentsRef = collection(db, 'students');
-    const q = query(studentsRef, where('guardian_id', '==', user.uid));
-    
-    // Use async/await consistently
-    const querySnapshot = await getDocs(q);
-    
-    // Simplify array creation using map()
-    const students: Student[] = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }) as Student);
-    
-    set({ students, isLoading: false });
-  } catch (error) {
-    set({ error: (error as Error).message, isLoading: false });
-  }
-},
+      const students: any[] = [];
+      
+      const querySnap = await getDocs(collection(db, "students"));
+      querySnap.forEach((doc) => {
+        const studentRef = doc.data();
+        const guardianRef = studentRef['guardian_id'];
+        if(guardianRef) {
+          if(typeof guardianRef === 'object' && guardianRef !== null) {
+            const pathSegment = guardianRef._key.path.segments[6];
+
+            if(pathSegment === user.uid) {
+              students.push({id: doc.id, ...studentRef})
+            }
+          }
+        }
+       
+      });
+   
+      set({ students, isLoading: false });
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+    }
+  },
 
 
   fetchStudentById: async (id: string) => {
@@ -155,5 +181,48 @@ fetchStudents: async () => {
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
+  },
+
+  fetchSubjectGrades: async (id: string) => {
+    try {
+      const studentDoc = await getDoc(doc(db, "students", id)); // Fetch the specific student document
+      if (studentDoc.exists()) {
+        const studentData = studentDoc.data();
+        const grades = studentData.grades; // Extract the grades object
+  
+        // Transform the grades object into an array of objects
+        const gradesData = Object.entries(grades).map(([subjectName, grade], index) => ({
+          id: `${id}-${index}`, // Unique ID for each grade
+          subjectName,
+          grade,
+        }));
+  
+        set({ subjectGrade: gradesData, isLoading: false });
+      } else {
+        set({ error: "Student not found", isLoading: false });
+      }
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+    }
+  },
+
+  fetchHomework: async() => {
+    try{     
+      const homework: any[] = [];
+      
+      const homeworkSnap = await getDocs(collection(db, "homework"));
+      homeworkSnap.forEach((doc) => {
+        const homeworkRef = doc.data();
+        const homeworkId = doc.id;
+
+        homework.push({ id: homeworkId, ...homeworkRef });
+      });
+
+      set({ homeworks: homework, isLoading: false });
+
+    } catch(err) {
+      set({error : (err as Error).message, isLoading: false});
+    }
   }
+
 }));

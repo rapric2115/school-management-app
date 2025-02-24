@@ -1,56 +1,69 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { StyleSheet, ScrollView, RefreshControl, Text } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { students } from '../data/student';
+import { useStore } from '../../context/DataContext';
+
 
 export default function Grades() {
-    const [currentStudent, setCurrentStudent] = useState(students[1]);
+     const { currentStudent, students, isLoading, subjectGrade, fetchSubjectGrades  } = useStore();
+    // const [currentStudent, setCurrentStudent] = useState(students[1]);
     const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
-        loadStudent();
-    }, []);
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        loadStudent();
-        setRefreshing(false);
-      }
-
-
-    const loadStudent = async () => {
-        const studentId = await AsyncStorage.getItem('studentId');
-        if(studentId && students[studentId]) {
-            setCurrentStudent(students[studentId]);
+        if (currentStudent?.id) {
+          fetchSubjectGrades(currentStudent.id);
         }
-    }
+      }, [currentStudent]); // Add currentStudent as a dependency
+
+      const onRefresh = () => {
+        setRefreshing(true);
+        if (currentStudent?.id) {
+          fetchSubjectGrades(currentStudent.id).finally(() => setRefreshing(false));
+        } else {
+          setRefreshing(false);
+        }
+      };
+
+    // const loadStudent = async () => {
+    //     const studentId = await AsyncStorage.getItem('studentId');
+    //     if(studentId && students[studentId]) {
+    //         setCurrentStudent(students[studentId]);
+    //     }
+    // }
 
     return (
         <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}>
-            <ThemedView style={styles.summary}>
-                <ThemedText style={styles.studentName}>{currentStudent.name}</ThemedText>
-                <ThemedText style={styles.gpa}>{currentStudent.gpa}</ThemedText>
-                <ThemedText style={styles.term}>{currentStudent.term}</ThemedText>
-            </ThemedView>
-            {currentStudent.subjects.map((subject, index) => (
-                <ThemedView key={index} style={styles.subjectCard}>
+            {currentStudent && (
+                <ThemedView style={styles.summary}>
+                    <ThemedText style={styles.studentName}>{currentStudent.name}</ThemedText>
+                    <ThemedText style={styles.gpa}>{currentStudent.gpa}</ThemedText>
+                    <ThemedText style={styles.term}>{currentStudent.term}</ThemedText>
+                </ThemedView>
+            )}
+           {subjectGrade.length > 0 ? (
+                subjectGrade.map((grade) => (
+                <ThemedView key={grade.id} style={styles.subjectCard}>
                     <ThemedView style={styles.subjectHeader} darkColor='dark'>
-                        <ThemedText style={styles.subjectName} darkColor='light'>{subject.name}</ThemedText>
-                        <ThemedView style={styles.gradeContainer} darkColor='dark'>
-                            <ThemedText style={styles.grade}>{subject.grade}</ThemedText>
-                            <ThemedText style={styles.percentage}>{subject.percentage}%</ThemedText>
-                        </ThemedView>
+                    <Text style={styles.subjectName}>
+                        {grade.subjectName}
+                    </Text>
+                    <ThemedView style={styles.gradeContainer} darkColor='dark'>
+                        <ThemedText style={styles.grade}>{grade.grade}</ThemedText>
+                    </ThemedView>
                     </ThemedView>
                     <ThemedView style={styles.progressBar}>
-                        <ThemedView style={[styles.progress, { width: `${subject.percentage}%`}]}></ThemedView>
+                    <ThemedView style={[styles.progress, { width: `${grade.grade}%` }]}></ThemedView>
                     </ThemedView>
                 </ThemedView>
-            ))}
-        </ScrollView>
-    )
-}
+                ))
+            ) : (
+                <ThemedText style={styles.noSubjectsText}>No grades found.</ThemedText>
+            )}
+                    </ScrollView>
+                )
+            }
 
 const styles = StyleSheet.create({
     container: {
@@ -98,7 +111,7 @@ const styles = StyleSheet.create({
     subjectName: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#fff'
+        color: '#000'
     },
     gradeContainer: {
         alignItems: 'flex-end'
@@ -125,5 +138,12 @@ const styles = StyleSheet.create({
     term: {
         fontSize: 14,
         fontWeight: '700'
+    },
+    noSubjectsText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#000',
+        marginTop: 20,
+        alignSelf: 'center'
     }
 })

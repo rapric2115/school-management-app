@@ -1,92 +1,132 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { students } from '../data/student';
+import { useStore } from '../../context/DataContext';
 
 export default function Homework() {
-  const [currentStudent, setCurrentStudent] = useState(students[1]);
+  const { currentStudent, homeworks, fetchHomework, fetchSubjectGrades } = useStore();
   const [filter, setFilter] = useState('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const [filteredHomework, setFilteredHomework] = useState<any[]>([]);
 
+  // Fetch homework and filter assignments when currentStudent or homeworks change
   useEffect(() => {
-    loadStudent();
-  }, []);
+    if (currentStudent?.id) {
+      fetchSubjectGrades(currentStudent.id);
+      fetchHomework();
+    }
+  }, [currentStudent]);
 
-  const loadStudent = async () => {
-    const studentId = await AsyncStorage.getItem('studentId');
-    if (studentId && students[studentId]) {
-      setCurrentStudent(students[studentId]);
+  // Filter homework based on currentStudent.grade and filter status
+  useEffect(() => {
+    if (currentStudent && homeworks.length > 0) {
+      // Step 1: Filter by grade
+      const gradeFilteredAssignments = homeworks.filter((hw) => hw.id === currentStudent.grade);
+
+      // Step 2: Flatten the nested structure and filter by status
+      const flattenedAssignments = gradeFilteredAssignments.flatMap((hw) =>
+        Object.entries(hw)
+          .filter(([key, value]) => key !== 'id' && typeof value === 'object') // Ensure value is an object
+          .map(([subject, details]) => ({
+            subject,
+            ...details,
+          }))
+      );
+
+      setFilteredHomework(flattenedAssignments);
+    }
+  }, [currentStudent, homeworks, filter]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    if (currentStudent?.id) {
+      fetchSubjectGrades(currentStudent.id).finally(() => setRefreshing(false));
+      fetchHomework().finally(() => setRefreshing(false));
+    } else {
+      setRefreshing(false);
     }
   };
 
-  const filteredHomework = currentStudent.homework.filter((assignment) => {
+
+  // Step 3: Filter by status (all, pending, completed)
+  const statusFilteredAssignments = filteredHomework.filter((assignment) => {
     if (filter === 'all') return true;
     return assignment.status === filter;
   });
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       <View style={styles.header}>
-        <Text style={styles.studentName}>{currentStudent.name}</Text>
-        <Text style={styles.subtitle}>{currentStudent.grade}</Text>
+        <Text style={styles.studentName}>{currentStudent?.name}</Text>
+        <Text style={styles.subtitle}>{currentStudent?.grade}</Text>
       </View>
 
       <View style={styles.filterContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.filterButton, filter === 'all' && styles.activeFilter]}
-          onPress={() => setFilter('all')}>
-          <Text style={filter === 'all' ? styles.activeFilterText : styles.filterText}>
-            All
-          </Text>
+          onPress={() => setFilter('all')}
+        >
+          <Text style={filter === 'all' ? styles.activeFilterText : styles.filterText}>All</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.filterButton, filter === 'pending' && styles.activeFilter]}
-          onPress={() => setFilter('pending')}>
-          <Text style={filter === 'pending' ? styles.activeFilterText : styles.filterText}>
-            Pending
-          </Text>
+          onPress={() => setFilter('pending')}
+        >
+          <Text style={filter === 'pending' ? styles.activeFilterText : styles.filterText}>Pending</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.filterButton, filter === 'completed' && styles.activeFilter]}
-          onPress={() => setFilter('completed')}>
-          <Text style={filter === 'completed' ? styles.activeFilterText : styles.filterText}>
-            Completed
-          </Text>
+          onPress={() => setFilter('completed')}
+        >
+          <Text style={filter === 'completed' ? styles.activeFilterText : styles.filterText}>Completed</Text>
         </TouchableOpacity>
       </View>
 
-      {filteredHomework.map((assignment, index) => (
-        <View key={index} style={styles.assignmentCard}>
-          <View style={styles.assignmentHeader}>
-            <View style={styles.subjectTag}>
-              <Text style={styles.subjectText}>{assignment.subject}</Text>
-            </View>
-            <Text style={styles.dueDate}>Due: {assignment.dueDate}</Text>
-          </View>
-          
-          <Text style={styles.title}>{assignment.title}</Text>
-          
-          <View style={styles.footer}>
-            <View style={styles.statusContainer}>
-              <View style={[
-                styles.statusDot,
-                { backgroundColor: assignment.status === 'completed' ? '#22c55e' : '#eab308' }
-              ]} />
-              <Text style={[
-                styles.statusText,
-                { color: assignment.status === 'completed' ? '#22c55e' : '#eab308' }
-              ]}>
-                {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
+      {statusFilteredAssignments.length > 0 ? (
+        statusFilteredAssignments.map((assignment, index) => (
+          <View key={index} style={styles.assignmentCard}>
+            <View style={styles.assignmentHeader}>
+              <View style={styles.subjectTag}>
+                <Text style={styles.subjectText}>{assignment.subject}</Text>
+              </View>
+              <Text style={styles.dueDate}>
+                Due: {assignment.dueDate.toDate().toLocaleDateString()} {/* Convert Timestamp to readable date */}
               </Text>
             </View>
-            
-            <TouchableOpacity style={styles.detailsButton}>
-              <Text style={styles.detailsText}>View Details</Text>
-              <Ionicons name="chevron-forward" size={16} color="#2563eb" />
-            </TouchableOpacity>
+
+            <Text style={styles.title}>{assignment.title}</Text>
+
+            <View style={styles.footer}>
+              <View style={styles.statusContainer}>
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: assignment.status === 'completed' ? '#22c55e' : '#eab308' },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: assignment.status === 'completed' ? '#22c55e' : '#eab308' },
+                  ]}
+                >
+                  {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
+                </Text>
+              </View>
+
+              <TouchableOpacity style={styles.detailsButton}>
+                <Text style={styles.detailsText}>View Details</Text>
+                <Ionicons name="chevron-forward" size={16} color="#2563eb" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      ))}
+        ))
+      ) : (
+        <Text style={styles.noAssignmentsText}>No assignments found.</Text>
+      )}
     </ScrollView>
   );
 }
@@ -202,5 +242,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginRight: 4,
+  },
+  noAssignmentsText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#64748b',
   },
 });

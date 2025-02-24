@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Image, StyleSheet, Platform, 
   ScrollView,
   TouchableOpacity,
-
+  RefreshControl
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -19,16 +19,18 @@ import { router } from 'expo-router';
 import { useStore } from '../../context/DataContext';
 
 export default function HomeScreen() {
-  const { currentStudent, students, user, fetchStudents, setCurrentStudent, logout, isLoading  } = useStore();
+  const { currentStudent, students, user, fetchStudents, setCurrentStudent, logout, isLoading, fetchSubjectGrades  } = useStore();
   const [showStudentPicker, setShowStudentPicker] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchStudents();
-    console.log('data from index', students)
-  },[students])
+  },[currentStudent, students])
 
   const handleStudentChange = (student: any) => {
     setCurrentStudent(student);
+    fetchSubjectGrades(student);
+    console.log('from handleStudent', student);
     setShowStudentPicker(false);
   };
 
@@ -42,7 +44,26 @@ export default function HomeScreen() {
     datasets: [{data: [65, 59, 80, 81, 56, 55]}],
 }
 
-// console.log('Current student', currentStudent)
+const onRefresh = () => {
+  setRefreshing(true);
+  fetchStudents();
+  console.log('data on refresh', currentStudent);
+  setRefreshing(false);
+}
+
+const formatTimestamp = (timestamp: any) => {
+  if (timestamp && timestamp.toDate) {
+    // Convert Firestore timestamp to a Date object
+    const date = timestamp.toDate();
+    // Format the date as "Month Day, Year" (e.g., "March 22, 2025")
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+  return 'No date'; // Fallback if timestamp is missing or invalid
+};
 
 if (isLoading || !currentStudent) {
   return (
@@ -53,7 +74,11 @@ if (isLoading || !currentStudent) {
 }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container}
+    refreshControl={
+      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+    }
+    >
       <ThemedView style={{ flex: 1 }}>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Ionicons name="log-out-outline" size={24} color="#fff" />
@@ -70,8 +95,8 @@ if (isLoading || !currentStudent) {
             />
           )}
           <ThemedView style={styles.headerText} darkColor='dark'>
-            <ThemedText darkColor='dark'>{currentStudent ? currentStudent.name: 'name'}</ThemedText>
-            <ThemedText darkColor='dark'>{currentStudent ? currentStudent.grade: 'grade'}</ThemedText>
+            <ThemedText darkColor='dark'>{currentStudent?.name ?? 'No Name'}</ThemedText>
+            <ThemedText darkColor='dark'>{currentStudent?.grade ?? 'No Grade'}</ThemedText>
           </ThemedView>
           <Ionicons name="chevron-down" size={24} color="#64748b" />         
         </TouchableOpacity>
@@ -87,7 +112,7 @@ if (isLoading || !currentStudent) {
             <TouchableOpacity
               key={id}
               style={styles.studentOption}
-              onPress={() => handleStudentChange(parseInt(id))}>
+              onPress={() => handleStudentChange(student)}>
               <Image source={{ uri: student.avatar }} style={styles.smallAvatar} />
               <ThemedText style={styles.studentOptionText}>{student.name}</ThemedText>
             </TouchableOpacity>
@@ -100,15 +125,15 @@ if (isLoading || !currentStudent) {
         <ThemedView style={styles.statsContainer} darkColor='dark'>
           <ThemedView style={styles.stat} darkColor='dark'>
             <ThemedText style={styles.statLabel}>Attendance</ThemedText>
-            <ThemedText style={styles.statValue}>{currentStudent? currentStudent.attendance: 'no attendance'}</ThemedText>
+            <ThemedText style={styles.statValue}>{currentStudent? currentStudent.attendancePorcentage: 'no attendance'}</ThemedText>
           </ThemedView>
           <ThemedView style={styles.stat} darkColor='dark'>
             <ThemedText style={styles.statLabel}>Next Payment</ThemedText>
-            <ThemedText style={styles.statValue}>{currentStudent? currentStudent.nextPayment: 'no next payment'}</ThemedText>
+            <ThemedText style={styles.statValue}>{currentStudent ? formatTimestamp(currentStudent.nextPayment) : 'No next payment'}</ThemedText>
           </ThemedView>
           <ThemedView style={styles.stat} darkColor='dark'>
             <ThemedText style={styles.statLabel}>Amount Due</ThemedText>
-            <ThemedText style={styles.statValue}>{currentStudent? currentStudent.amount: 'no amount'}</ThemedText>
+            <ThemedText style={styles.statValue}>${currentStudent? currentStudent.tuition: 'no amount'}</ThemedText>
           </ThemedView>
         </ThemedView>
       </ThemedView>
