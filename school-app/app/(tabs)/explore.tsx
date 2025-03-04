@@ -2,77 +2,120 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { students } from '../data/student';
+import { useStore } from '../../context/DataContext';
+import { Student } from '@/types/student';
 
 export default function TabTwoScreen() {
-  const [currentStudent, setCurrentStudent] = useState(students[1]);
+  const { currentStudent, schoolInfo, fetchSchoolInformation } = useStore();
   const [activeTab, setActiveTab] = useState('announcements');
+  const [announcements, setAnnouncements ] = useState<any[]>([]);
+  const [events, setEvents ] = useState<any[]>([])
   
   useEffect(() => {
-    loadStudent();
-  }, []);
+    fetchSchoolInformation();
+  }, [schoolInfo]);
 
-  const loadStudent = async () => {
-    const studentId = await AsyncStorage.getItem('studentId');
-    if (studentId && students[studentId]) {
-      setCurrentStudent(students[studentId]);
-    }
-  };
+  // const loadStudent = async () => {
+  //   const studentId = await AsyncStorage.getItem('studentId');
+  //   if (studentId && students[studentId]) {
+  //     setCurrentStudent(students[studentId]);
+  //   }
+  // };
 
-  const announcements = [
-    {
-      id: 1,
-      title: 'Spring Break Schedule',
-      date: 'March 20, 2024',
-      content: 'Spring break will be from April 1-5. Classes resume on April 8.',
-      priority: 'high',
-      image: 'https://images.unsplash.com/photo-1596386461350-326ccb383e9f?w=800&q=80',
-    },
-    {
-      id: 2,
-      title: 'Parent-Teacher Conference',
-      date: 'March 18, 2024',
-      content: 'Schedule your meeting with teachers for the upcoming parent-teacher conference day.',
-      priority: 'medium',
-    },
-    {
-      id: 3,
-      title: 'Science Fair Registration',
-      date: 'March 15, 2024',
-      content: 'Registration for the annual science fair is now open. Submit your project proposals by March 25.',
-      priority: 'medium',
-      image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&q=80',
-    },
-  ];
+  console.log('data from info: ', announcements)
 
-  const events = [
-    {
-      id: 1,
-      title: 'Sports Day',
-      date: 'March 30, 2024',
-      time: '9:00 AM - 4:00 PM',
-      location: 'School Sports Complex',
-      image: 'https://images.unsplash.com/photo-1576858574144-9ae1ebcf5ae5?w=800&q=80',
-    },
-    {
-      id: 2,
-      title: 'Art Exhibition',
-      date: 'April 15, 2024',
-      time: '2:00 PM - 6:00 PM',
-      location: 'School Auditorium',
-      image: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800&q=80',
-    },
-    {
-      id: 3,
-      title: 'Career Day',
-      date: 'April 20, 2024',
-      time: '10:00 AM - 3:00 PM',
-      location: 'Main Hall',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
-    },
-  ];
+  useEffect(() => {
+    if(schoolInfo.length > 0) {
+      const extractedAnnouncement: any[] = [];
+      const extractedEvents: any[] = [];
+      schoolInfo.forEach((item) => {
+        Object.entries(item).forEach(([key, value]) => {
+          if(key !== 'id' && typeof value === 'object') {
+            extractedAnnouncement.push({
+              id: key,
+              title: value.title,
+              date: value.date.toDate().toLocaleDateString(),
+              content: value.content,
+              priority:value.priority || 'medium',
+              image: value.image || '',
+            })
+          } else if (item.id === 'events') {
+            Object.entries(item).forEach(([key, value]) => {
+              if(key !== 'id' && typeof value === 'object') {
+                extractedEvents.push({
+                  id: key,
+                  title: value.title,
+                  date: value.date.toDate().toLocaleDateString(),
+                  time: value.time || '',
+                  location: value.location || 'NA'
+                })
+              }
+            })
+          }
+        })
+      })
 
-  const renderPriorityBadge = (priority) => {
+      setAnnouncements(extractedAnnouncement);
+      setEvents(extractedEvents)
+     }
+  }, [])
+
+  // console.log('Data from school info', schoolInfo);
+
+  // const announcements = [
+  //   {
+  //     id: 1,
+  //     title: 'Spring Break Schedule',
+  //     date: 'March 20, 2024',
+  //     content: 'Spring break will be from April 1-5. Classes resume on April 8.',
+  //     priority: 'high',
+  //     image: 'https://images.unsplash.com/photo-1596386461350-326ccb383e9f?w=800&q=80',
+  //   },
+  //   {
+  //     id: 2,
+  //     title: 'Parent-Teacher Conference',
+  //     date: 'March 18, 2024',
+  //     content: 'Schedule your meeting with teachers for the upcoming parent-teacher conference day.',
+  //     priority: 'medium',
+  //   },
+  //   {
+  //     id: 3,
+  //     title: 'Science Fair Registration',
+  //     date: 'March 15, 2024',
+  //     content: 'Registration for the annual science fair is now open. Submit your project proposals by March 25.',
+  //     priority: 'medium',
+  //     image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&q=80',
+  //   },
+  // ];
+
+  // const events = [
+  //   {
+  //     id: 1,
+  //     title: 'Sports Day',
+  //     date: 'March 30, 2024',
+  //     time: '9:00 AM - 4:00 PM',
+  //     location: 'School Sports Complex',
+  //     image: 'https://images.unsplash.com/photo-1576858574144-9ae1ebcf5ae5?w=800&q=80',
+  //   },
+  //   {
+  //     id: 2,
+  //     title: 'Art Exhibition',
+  //     date: 'April 15, 2024',
+  //     time: '2:00 PM - 6:00 PM',
+  //     location: 'School Auditorium',
+  //     image: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800&q=80',
+  //   },
+  //   {
+  //     id: 3,
+  //     title: 'Career Day',
+  //     date: 'April 20, 2024',
+  //     time: '10:00 AM - 3:00 PM',
+  //     location: 'Main Hall',
+  //     image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
+  //   },
+  // ];
+
+  const renderPriorityBadge = (priority: any) => {
     const colors = {
       high: { bg: '#fee2e2', text: '#dc2626' },
       medium: { bg: '#fef9c3', text: '#ca8a04' },
@@ -92,7 +135,7 @@ export default function TabTwoScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>School Information</Text>
-        <Text style={styles.headerSubtitle}>{currentStudent.grade}</Text>
+        {/* <Text style={styles.headerSubtitle}>{currentStudent.grade}</Text> */}
       </View>
 
       <View style={styles.tabs}>

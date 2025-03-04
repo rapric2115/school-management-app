@@ -30,7 +30,7 @@ export default function HomeScreen() {
   const handleStudentChange = (student: any) => {
     setCurrentStudent(student);
     fetchSubjectGrades(student);
-    console.log('from handleStudent', student);
+    // console.log('from handleStudent', student);
     setShowStudentPicker(false);
   };
 

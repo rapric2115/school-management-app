@@ -29,6 +29,12 @@ export interface Student {
       dueDate: string;
       status: string;
     }[];
+    schoolInformation: {
+      title: string;
+      time: string;
+      location: string;
+      date: string;
+    }
   }
   
   export interface User {

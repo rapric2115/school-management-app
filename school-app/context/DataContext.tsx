@@ -27,6 +27,7 @@ interface AppState {
   error: string | null;
   subjectGrade: { [key: string]: any; id: string; }[]
   homeworks: Student[];
+  schoolInfo: Student[];
   
   // Auth actions
   login: (email: string, password: string) => Promise<void>;
@@ -39,6 +40,7 @@ interface AppState {
   fetchStudentById: (id: string) => Promise<void>;
   fetchSubjectGrades: (id: string) => Promise<void>;
   fetchHomework: () => Promise<void>;
+  fetchSchoolInformation: () => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -49,6 +51,7 @@ export const useStore = create<AppState>((set, get) => ({
   error: null,
   subjectGrade: [],
   homeworks: [],
+  schoolInfo: [],
 
   login: async (email: string, password: string) => {
     try {
@@ -222,6 +225,23 @@ export const useStore = create<AppState>((set, get) => ({
 
     } catch(err) {
       set({error : (err as Error).message, isLoading: false});
+    }
+  },
+
+  fetchSchoolInformation: async() => {
+    try{ 
+      const schoolInfos: any[] = [];
+  
+      const schoolInfoSnap = await getDocs(collection(db, 'schoolInformation'));
+      schoolInfoSnap.forEach((doc) => {
+        const schoolInfoRef = doc.data();
+        const schoolInfoID = doc.id;
+        schoolInfos.push({id: schoolInfoID, ...schoolInfoRef})
+      })
+      set({schoolInfo: schoolInfos, isLoading: false})
+      
+    } catch(error) {
+      set({error: (error as Error).message, isLoading: false})
     }
   }
 
