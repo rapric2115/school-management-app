@@ -119,6 +119,22 @@ if (isLoading || !currentStudent) {
           ))}
         </ThemedView>
       )}
+      <ThemedView style={[styles.card, ]}>
+        <ThemedText darkColor='light' style={{alignSelf: 'center', marginBottom: 10}}>Bank Accounts Information</ThemedText>
+        <ThemedView style={{flexDirection: 'row', 
+          justifyContent: 'space-around'}} darkColor='dark'>
+          <ThemedText darkColor='light'>Popular Bank</ThemedText>
+          <ThemedText darkColor='light'>032 156789 6</ThemedText>
+        </ThemedView>
+        <ThemedView style={{flexDirection: 'row', justifyContent: 'space-around'}} darkColor='dark'>
+          <ThemedText darkColor='light'>BHD Bank</ThemedText>
+          <ThemedText darkColor='light'>032 156789 6</ThemedText>
+        </ThemedView>
+        <ThemedView style={{flexDirection: 'row', justifyContent: 'space-around'}} darkColor='dark'>
+          <ThemedText darkColor='light'>Scotiabank</ThemedText>
+          <ThemedText darkColor='light'>032 156789 6</ThemedText>
+        </ThemedView>
+      </ThemedView>
 
       <ThemedView style={styles.card}>
         <ThemedText style={styles.cardTitle}>Quick Stats</ThemedText>
